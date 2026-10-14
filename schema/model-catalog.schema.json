@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "QuantizeConfig": {
+      "properties": {
+        "enabled": {
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "method": {
+          "examples": [
+            "dynamic_int8"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "method"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://mecha10.dev/schemas/model-catalog.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Schema for model_catalog.toml, the mecha10-models model catalog",
+  "properties": {
+    "models": {
+      "items": {
+        "properties": {
+          "classes": {
+            "default": [],
+            "examples": [
+              [
+                "face"
+              ]
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": {
+            "examples": [
+              "YOLOv8 Nano - Fast face detection"
+            ],
+            "type": "string"
+          },
+          "filename": {
+            "examples": [
+              "yolov8n-face/model.onnx"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "examples": [
+              "yolov8n-face"
+            ],
+            "type": "string"
+          },
+          "preprocessing_preset": {
+            "default": null,
+            "examples": [
+              "yolo"
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantize": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/QuantizeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "examples": [
+              {
+                "enabled": true,
+                "method": "dynamic_int8"
+              }
+            ]
+          },
+          "repo": {
+            "examples": [
+              "deepghs/yolo-face"
+            ],
+            "type": "string"
+          },
+          "task": {
+            "examples": [
+              "object-detection"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "task",
+          "repo",
+          "filename"
+        ],
+        "title": "ModelCatalogEntry",
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "models"
+  ],
+  "title": "Mecha10 Model Catalog",
+  "type": "object"
+}

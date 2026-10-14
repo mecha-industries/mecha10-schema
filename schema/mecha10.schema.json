@@ -1,0 +1,643 @@
+{
+  "$defs": {
+    "ActuatorConfig": {
+      "properties": {
+        "locomotion": {
+          "$ref": "#/$defs/LocomotionLimitsConfig",
+          "default": {
+            "max_acceleration": 8.0,
+            "max_angular_vel": 5.0,
+            "max_linear_vel": 10.0
+          }
+        }
+      },
+      "type": "object"
+    },
+    "BehaviorsConfig": {
+      "description": "Behavior tree configuration controlling autonomous robot behavior execution.",
+      "properties": {
+        "active": {
+          "description": "Name of the active behavior to run (e.g. \"idle-wander\", \"patrol-simple\", \"rl\").",
+          "examples": [
+            "idle-wander"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "active"
+      ],
+      "type": "object"
+    },
+    "DockerServicesConfig": {
+      "description": "Docker services configuration for project-level Docker Compose management",
+      "properties": {
+        "auto_start": {
+          "default": true,
+          "description": "Whether to auto-start services in dev mode",
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "compose_file": {
+          "default": "docker/docker-compose.yml",
+          "description": "Path to docker-compose.yml relative to project root",
+          "examples": [
+            "docker/docker-compose.yml"
+          ],
+          "type": "string"
+        },
+        "remote": {
+          "default": [],
+          "description": "Services needed for remote execution (Redis + databases, etc.)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "robot": {
+          "default": [],
+          "description": "Services needed for on-robot execution (typically just Redis for message passing)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "EnvironmentConfig": {
+      "description": "Configuration for a specific environment",
+      "properties": {
+        "control_plane": {
+          "description": "Control plane base URL for this environment (e.g. \"https://mecha.industries/api\");\ndefaults to the standard control plane URL when omitted.",
+          "examples": [
+            "https://mecha.industries"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "logging": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoggingConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Per-environment logging overrides, such as whether disk logging is enabled."
+        }
+      },
+      "type": "object"
+    },
+    "EnvironmentsConfig": {
+      "description": "Per-environment configuration (dev, staging, prod), with the active environment selected via\nthe `MECHA10_ENV` environment variable or `--env` flag.",
+      "properties": {
+        "dev": {
+          "$ref": "#/$defs/EnvironmentConfig",
+          "default": {},
+          "description": "Development environment (local control plane)"
+        },
+        "prod": {
+          "$ref": "#/$defs/EnvironmentConfig",
+          "default": {},
+          "description": "Production environment (cloud control plane)"
+        },
+        "staging": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EnvironmentConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Staging environment (optional)"
+        }
+      },
+      "type": "object"
+    },
+    "LocomotionLimitsConfig": {
+      "description": "Motion limits for a differential-drive (or similar) locomotion base.",
+      "properties": {
+        "max_acceleration": {
+          "default": 8.0,
+          "format": "float",
+          "type": "number"
+        },
+        "max_angular_vel": {
+          "default": 5.0,
+          "format": "float",
+          "type": "number"
+        },
+        "max_linear_vel": {
+          "default": 10.0,
+          "format": "float",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "LoggingConfig": {
+      "description": "Logging configuration for a single environment, controlling whether node logs are written\nto local disk. Remote/network log shipping is independent of this setting.",
+      "properties": {
+        "disk_logging_enabled": {
+          "default": true,
+          "description": "Whether node stdout/stderr may be written to local disk, in addition to any remote log\nshipping.",
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "NodeRef": {
+      "anyOf": [
+        {
+          "description": "A node running as its default, single instance.",
+          "type": "string"
+        },
+        {
+          "description": "A node running as one of several keyed instances of the same node type.",
+          "properties": {
+            "instance_id": {
+              "description": "Which instance of `name` this is (e.g. `real` or `sim`).",
+              "type": "string"
+            },
+            "name": {
+              "description": "Node identifier (e.g. `@mecha10/camera`).",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "instance_id"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "A single entry in a target's node list, either a plain node identifier or a named instance\nfor a node that needs to run as more than one instance under the same target."
+    },
+    "NodesConfig": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Map of node identifiers (e.g. `@mecha10/listener`, `my-custom`) to their pinned versions.",
+      "type": "object"
+    },
+    "ProjectSimulationConfig": {
+      "description": "Project-level simulation settings, distinct from the runtime simulation config used during\nexecution.",
+      "properties": {
+        "environment": {
+          "description": "Simulation environment name to use for interactive simulation, overriding the default\nenvironment.",
+          "examples": [
+            "empty_room"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model": {
+          "description": "Robot model name to use for interactive simulation, overriding the default model.",
+          "examples": [
+            "rover"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scenario": {
+          "description": "Optional scenario name selecting which simulation config file to load.",
+          "examples": [
+            "warehouse"
+          ],
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "TargetEntry": {
+      "description": "A single target's configuration: which nodes run on it, and (for `robot`/`remote`) which\nRust target triple(s) `mecha10 build` compiles for.",
+      "properties": {
+        "nodes": {
+          "default": [],
+          "description": "Nodes that run on this target, either plain node identifiers or named instances of\nmulti-instance nodes.",
+          "items": {
+            "$ref": "#/$defs/NodeRef"
+          },
+          "type": "array"
+        },
+        "platforms": {
+          "description": "Rust target triple(s) to build for (e.g. `aarch64-unknown-linux-gnu`); defaults to the\nhost machine's own architecture when unset. Only meaningful for `robot`/`remote`.",
+          "items": {
+            "enum": [
+              "x86_64-apple-darwin",
+              "aarch64-apple-darwin",
+              "x86_64-unknown-linux-gnu",
+              "aarch64-unknown-linux-gnu"
+            ],
+            "type": "string"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "TargetsConfig": {
+      "description": "Target execution configuration: where nodes run (locally, in simulation, on the robot, or\nremotely), and, for `robot`/`remote`, which Rust target triple(s) builds compile for.",
+      "properties": {
+        "dev": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetEntry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Nodes that run locally on the developer's machine, in-process, via `mecha10 dev`"
+        },
+        "remote": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetEntry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Nodes that run remotely in Docker containers, typically AI/ML nodes with\nplatform-specific dependencies"
+        },
+        "robot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetEntry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Nodes that run on the robot as local processes, typically hardware drivers and\nlow-latency control nodes"
+        },
+        "simulation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetEntry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Nodes that run in a simulated environment"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "node": {
+      "properties": {
+        "auto_restart": {
+          "default": true,
+          "description": "Auto-restart on crash",
+          "type": "boolean"
+        },
+        "config": {
+          "description": "Path to node configuration file",
+          "type": "string"
+        },
+        "depends_on": {
+          "description": "Node dependencies (other nodes that must start first)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": {
+          "description": "Node description",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "description": "Whether node is enabled",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Node name (snake_case)",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path to node source code",
+          "type": "string"
+        },
+        "run_target": {
+          "description": "Where to run this node - a key of this project's `run_targets` map",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "path"
+      ],
+      "type": "object"
+    },
+    "runTarget": {
+      "properties": {
+        "description": {
+          "description": "Target description",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "includes": {
+          "description": "Node groups to include",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "resources": {
+          "description": "Resource requirements",
+          "properties": {
+            "cpu_limit": {
+              "description": "CPU limit (e.g., '2.0')",
+              "pattern": "^\\d+(\\.\\d+)?$",
+              "type": "string"
+            },
+            "devices": {
+              "description": "Required device files (e.g., /dev/video0)",
+              "items": {
+                "pattern": "^/dev/.+$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "gpu": {
+              "description": "GPU requirements",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "properties": {
+                    "count": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "optional": {
+                      "type": "boolean"
+                    },
+                    "vendor": {
+                      "enum": [
+                        "nvidia",
+                        "amd",
+                        "intel"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              ]
+            },
+            "memory_limit": {
+              "description": "Memory limit (e.g., '512M', '16G')",
+              "pattern": "^\\d+(K|M|G|T)?$",
+              "type": "string"
+            },
+            "model_cache": {
+              "description": "Path to model cache directory",
+              "type": "string"
+            },
+            "storage_size_gb": {
+              "description": "Storage size in GB",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "storage_type": {
+              "description": "Storage type requirement",
+              "enum": [
+                "local",
+                "ssd",
+                "hdd",
+                "any"
+              ],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "standardNode": {
+      "properties": {
+        "binary": {
+          "description": "Binary name within package",
+          "type": "string"
+        },
+        "config": {
+          "description": "Path to configuration file",
+          "type": "string"
+        },
+        "package": {
+          "description": "Package identifier (e.g., @mecha10/speaker)",
+          "examples": [
+            "@mecha10/speaker"
+          ],
+          "pattern": "^@[a-z0-9-]+/[a-z0-9/-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "package",
+        "binary"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "actuator": {
+      "$ref": "#/$defs/ActuatorConfig",
+      "default": {
+        "locomotion": {
+          "max_acceleration": 8.0,
+          "max_angular_vel": 5.0,
+          "max_linear_vel": 10.0
+        }
+      },
+      "description": "Actuator motion limits (linear/angular velocity and acceleration) applied to every node."
+    },
+    "behaviors": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BehaviorsConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "docker": {
+      "$ref": "#/$defs/DockerServicesConfig",
+      "default": {
+        "auto_start": false,
+        "compose_file": "",
+        "remote": [],
+        "robot": []
+      }
+    },
+    "environments": {
+      "$ref": "#/$defs/EnvironmentsConfig",
+      "default": {
+        "dev": {},
+        "prod": {}
+      }
+    },
+    "name": {
+      "description": "The project's name; lowercase letters, numbers, and hyphens only, 1-64 characters.",
+      "examples": [
+        "my-robot"
+      ],
+      "maxLength": 64,
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "type": "string"
+    },
+    "nodes": {
+      "description": "Node definitions (NodesConfig in mecha10-cli-core) - typically a flat identifier -> version map, though the legacy `drivers`/`standard`/`custom` arrays below also validate (no `additionalProperties` restriction). Keys: a framework node's full package id (\"@mecha10/speaker\"), a future registry node (\"@<org>/<name>\"), or a project node's own unprefixed name (\"my-custom\"); the legacy \"@local/*\" prefix is no longer supported.",
+      "examples": [
+        {
+          "@mecha10/motor": "latest",
+          "@mecha10/speaker": "latest",
+          "my-custom": "0.1.0"
+        }
+      ],
+      "properties": {
+        "custom": {
+          "description": "Custom application nodes (legacy array form - see this property's own description)",
+          "items": {
+            "$ref": "#/definitions/node"
+          },
+          "type": "array"
+        },
+        "drivers": {
+          "description": "Hardware driver nodes (legacy array form - see this property's own description)",
+          "items": {
+            "$ref": "#/definitions/node"
+          },
+          "type": "array"
+        },
+        "standard": {
+          "description": "Standard/pre-built nodes from packages (legacy array form - see this property's own description)",
+          "items": {
+            "$ref": "#/definitions/standardNode"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "robot_description": {
+      "default": null,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "robot_id": {
+      "default": "",
+      "description": "The robot's unique identifier.",
+      "examples": [
+        "robot-001"
+      ],
+      "pattern": "^[a-zA-Z0-9_\\-${}]+$",
+      "type": "string"
+    },
+    "robot_name": {
+      "default": "",
+      "description": "Human-facing name for the robot.",
+      "examples": [
+        "my-robot"
+      ],
+      "type": "string"
+    },
+    "robot_platform": {
+      "default": null,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_targets": {
+      "description": "Execution targets (robot, remote, dev, etc.)",
+      "patternProperties": {
+        "^[a-z][a-z0-9_-]*$": {
+          "$ref": "#/definitions/runTarget"
+        }
+      },
+      "type": "object"
+    },
+    "scripts": {
+      "description": "Script shortcuts (npm scripts-like)",
+      "patternProperties": {
+        "^[a-z][a-z0-9:_-]*$": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "simulation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProjectSimulationConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "targets": {
+      "$ref": "#/$defs/TargetsConfig",
+      "default": {}
+    },
+    "template_version": {
+      "description": "Which published templates release this project's scaffolded files were generated from.",
+      "examples": [
+        "1.4.0"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-.+)?$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "version"
+  ],
+  "title": "ProjectConfig",
+  "type": "object"
+}

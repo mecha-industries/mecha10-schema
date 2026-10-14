@@ -1,0 +1,305 @@
+{
+  "$defs": {
+    "FlowType": {
+      "description": "Which training pipeline flow a job runs as.",
+      "enum": [
+        "train",
+        "tune",
+        "tune-then-train",
+        "train-from-tune",
+        "resume-run"
+      ],
+      "type": "string"
+    },
+    "SearchSpaceEntry": {
+      "properties": {
+        "choices": {
+          "default": null,
+          "items": true,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "high": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "log": {
+          "default": null,
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "low": {
+          "default": null,
+          "format": "double",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SearchSpaceType"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "type": "object"
+    },
+    "SearchSpaceType": {
+      "enum": [
+        "float",
+        "int",
+        "categorical"
+      ],
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "algorithm": {
+      "default": null,
+      "examples": [
+        "ppo"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "batch_size": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "clip_range": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "description": {
+      "default": null,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ent_coef": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "env_name": {
+      "default": null,
+      "examples": [
+        "warehouse_nav"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "environment_map": {
+      "default": null,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "eval_eps": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "flow_type": {
+      "$ref": "#/$defs/FlowType"
+    },
+    "gae_lambda": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "gamma": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "learning_rate": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "linear_lr_schedule": {
+      "default": null,
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "max_grad_norm": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "min_delta": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "n_envs": {
+      "default": null,
+      "examples": [
+        8
+      ],
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "n_epochs": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "n_steps": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "n_trials": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "patience": {
+      "default": null,
+      "examples": [
+        10
+      ],
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "policy": {
+      "default": null,
+      "examples": [
+        "MlpPolicy"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "search_space": {
+      "default": null,
+      "items": {
+        "$ref": "#/$defs/SearchSpaceEntry"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "seed": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "task_name": {
+      "default": null,
+      "examples": [
+        "patrol_curriculum"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "total_timesteps": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "tune_timesteps": {
+      "default": null,
+      "format": "int64",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "vf_coef": {
+      "default": null,
+      "format": "double",
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "flow_type"
+  ],
+  "title": "JobDefinition",
+  "type": "object"
+}

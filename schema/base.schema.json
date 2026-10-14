@@ -1,0 +1,169 @@
+{
+  "$defs": {
+    "ModelSource": {
+      "description": "Where a node should resolve a model it references from.\n\nShared by every built-in node that points at an on-disk model this way (`object-detector`,\n`image-classifier`, `rl` - see [`NodeModelConfig`]).",
+      "oneOf": [
+        {
+          "const": "catalog",
+          "description": "The public catalog of example models.",
+          "type": "string"
+        },
+        {
+          "const": "registry",
+          "description": "The private per-project model registry.",
+          "type": "string"
+        }
+      ]
+    },
+    "NodeModelConfig": {
+      "additionalProperties": false,
+      "description": "A node's reference to the on-disk model it should load - shared/reserved across every\nbuilt-in node that has this concept (`object-detector`, `image-classifier`, `rl`), moved\nonto [`crate::node_config_base::NodeConfigBase`] (LAB-4384 follow-up) the same way\n`relay_topics` already was, rather than each of those nodes re-declaring its own\nnear-identical `ModelConfig` struct.\n\nThis is deliberately a *different* type from [`ModelConfig`] above: that one is the model\ncatalog's own on-disk metadata (`models/catalog/<name>/config.json` - task, repo, filename,\npreprocessing, labels); this one is a *node's pointer* to a model (which one, where its file\nlives, where to resolve it from), a completely different concept that happens to share the\nword \"model\".\n\n`name`/`path` default to the empty string rather than this type baking in any one node's\nreal default value (object-detector defaults to `\"yolov8n\"`, rl to `\"find-target\"`,\nimage-classifier to `\"mobilenet-v2\"` - genuinely different per node). Each node resolves its\nown real default for an empty value itself (see each node's own `model()` accessor on its\n`Config` type) - this mirrors exactly how `#[serde(default)]` on this struct's own fields\nalready behaved before this type was shared (calling `Default::default()`, not a per-node\ndefault function, when the field - or the whole `model` key - is merely absent).\n\n`confidence_threshold` only has meaning for `image-classifier` today (object-detector/rl\nignore it) - it lives here rather than as a `image-classifier`-only extra field so this\nstruct stays the single shared shape for the \"which model does this node use\" concept across\nall three nodes rather than splintering into near-identical siblings again.\n\n`provider` only has meaning for `llm-command` (object-detector/image-classifier/rl ignore\nit) - it used to be a separate field on `NodeConfigBase` alongside `model`, but \"which\nbackend resolves this model\" is part of the same \"which model does this node use\" concept,\nso it consolidated into this one struct instead of two separate `Option` fields on the base.",
+      "properties": {
+        "confidence_threshold": {
+          "description": "Minimum confidence score a classification result must meet to be reported\n(`image-classifier`-specific; ignored by other nodes using this type).",
+          "format": "float",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "name": {
+          "default": "",
+          "description": "Name of the model to load. Empty means \"not set\" - the owning node resolves its own\ndefault in that case.",
+          "type": "string"
+        },
+        "path": {
+          "default": "",
+          "description": "Filesystem path to the model file. Empty means \"not set\" - the owning node resolves its\nown default in that case.",
+          "type": "string"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provider"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Which LLM backend to query (`llm-command`-specific; ignored by other nodes using this\ntype). `None` means \"not set\" - the owning node resolves its own default in that case."
+        },
+        "source": {
+          "$ref": "#/$defs/ModelSource",
+          "default": "catalog",
+          "description": "Where to resolve the model from."
+        },
+        "version": {
+          "default": null,
+          "description": "Specific model version to use (registry-sourced models only); latest if omitted.",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Provider": {
+      "description": "Which LLM backend a node should query - shared/reserved the same way [`NodeModelConfig`] is,\nfor `llm-command`'s analogous \"which model does this node use\" concern (LAB-4384 follow-up).\n`llm-command` is the only node with this concept today, so unlike [`NodeModelConfig`] there's\nno cross-node shape to reconcile - this just lives in `mecha10-core` (rather than\n`mecha10-nodes-llm-command`) so [`crate::node_config_base::NodeConfigBase`] can reference it.",
+      "oneOf": [
+        {
+          "const": "openai",
+          "description": "OpenAI's hosted API.",
+          "type": "string"
+        },
+        {
+          "const": "claude",
+          "description": "Anthropic's hosted API.",
+          "type": "string"
+        },
+        {
+          "const": "local",
+          "description": "A local Ollama server.",
+          "type": "string"
+        }
+      ]
+    },
+    "Topics": {
+      "description": "Per-role publish/subscribe topic configuration shared by node config structs.",
+      "properties": {
+        "publishes": {
+          "default": [],
+          "description": "Topics this node publishes to, keyed by role (e.g. \"output\", \"status\")",
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "subscribes": {
+          "default": [],
+          "description": "Topics this node subscribes to, keyed by role (e.g. \"input\", \"control\")",
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Fields common to every node's configuration, reserved across all node types.",
+  "properties": {
+    "controller": {
+      "description": "The mock-vs-hardware controller backend selector, for the nodes that have this concept\n(`imu`, `motor`). Opaque - see the module docs for why this can't be a shared Rust type\nthe way `model`/`topics` are."
+    },
+    "model": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NodeModelConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Which model this node should load, for the nodes that have this concept\n(`object-detector`, `image-classifier`, `rl`, `llm-command` - the latter via its\n`name`/`provider` fields only, see the module docs). `None` for every other node, and\nfor these four when the key is simply absent - see the module docs for why this is never\na node-specific default value."
+    },
+    "relay_topics": {
+      "default": null,
+      "description": "Which of this node's published topics should be forwarded to the dashboard.",
+      "examples": [
+        [
+          "/vision/classification"
+        ]
+      ],
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "status_rate_hz": {
+      "description": "How often, in Hz, to publish node status updates, for the nodes that have this concept\n(`camera`, `motor`, `teleop`). `None` for every other node, and for these three when the\nkey is simply absent - see the module docs for why this is never a node-specific default\nvalue.",
+      "format": "float",
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "topics": {
+      "$ref": "#/$defs/Topics",
+      "default": {
+        "publishes": [],
+        "subscribes": []
+      },
+      "description": "Per-role publish/subscribe topic configuration - every built-in node declares one of\nthese."
+    }
+  },
+  "title": "NodeConfigBase",
+  "type": "object"
+}

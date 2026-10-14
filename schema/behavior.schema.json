@@ -1,0 +1,228 @@
+{
+  "$defs": {
+    "CompositionConfig": {
+      "description": "A node in a behavior tree: either a composite control-flow node or a leaf behavior node.",
+      "oneOf": [
+        {
+          "description": "Runs its children in order, stopping early if one fails.",
+          "properties": {
+            "children": {
+              "description": "Child nodes to run in order.",
+              "items": {
+                "$ref": "#/$defs/CompositionConfig"
+              },
+              "type": "array"
+            },
+            "name": {
+              "description": "Optional name for this node.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "sequence",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "children"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Runs its children in order, stopping early if one succeeds.",
+          "properties": {
+            "children": {
+              "description": "Child nodes to try in order.",
+              "items": {
+                "$ref": "#/$defs/CompositionConfig"
+              },
+              "type": "array"
+            },
+            "name": {
+              "description": "Optional name for this node.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "const": "selector",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "children"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Runs all of its children concurrently.",
+          "properties": {
+            "children": {
+              "description": "Child nodes to run concurrently.",
+              "items": {
+                "$ref": "#/$defs/CompositionConfig"
+              },
+              "type": "array"
+            },
+            "name": {
+              "description": "Optional name for this node.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "policy": {
+              "$ref": "#/$defs/ParallelPolicyConfig",
+              "default": "require_all",
+              "description": "Policy determining when this node succeeds based on its children's outcomes."
+            },
+            "type": {
+              "const": "parallel",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "children"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "A leaf node that runs a single behavior node implementation.",
+          "properties": {
+            "config": {
+              "description": "Inline configuration for this node."
+            },
+            "config_ref": {
+              "description": "Key into the top-level `configs` map to use as this node's configuration.",
+              "examples": [
+                "wander"
+              ],
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "name": {
+              "description": "Optional name for this node.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "node": {
+              "description": "Name of the behavior node type to run.",
+              "examples": [
+                "wander"
+              ],
+              "type": "string"
+            },
+            "type": {
+              "const": "node",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "node"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ParallelPolicyConfig": {
+      "description": "Determines when a `Parallel` composition node succeeds, based on its children's outcomes.",
+      "oneOf": [
+        {
+          "const": "require_all",
+          "description": "Succeeds only once all children succeed.",
+          "type": "string"
+        },
+        {
+          "const": "require_one",
+          "description": "Succeeds once any one child succeeds.",
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Succeeds once at least the given number of children succeed.",
+          "properties": {
+            "require_n": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "require_n"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A behavior tree definition loaded from a JSON configuration file.",
+  "properties": {
+    "$schema": {
+      "description": "URL of the JSON schema this configuration conforms to.",
+      "examples": [
+        "https://mecha10.dev/schemas/behavior-composition-v1.json"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "configs": {
+      "additionalProperties": true,
+      "description": "Named configuration values referenced by nodes in the behavior tree via `config_ref`.",
+      "examples": [
+        {
+          "detector": {
+            "confidence": 0.7
+          },
+          "safety": {
+            "max_speed": 1.0
+          },
+          "wander": {
+            "speed": 0.5
+          }
+        }
+      ],
+      "type": "object"
+    },
+    "description": {
+      "description": "Human-readable description of what this behavior does.",
+      "examples": [
+        "Patrol behavior with safety layer"
+      ],
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "description": "Name of this behavior.",
+      "examples": [
+        "patrol_mission"
+      ],
+      "type": "string"
+    },
+    "root": {
+      "$ref": "#/$defs/CompositionConfig",
+      "description": "The root node of the behavior tree."
+    }
+  },
+  "required": [
+    "name",
+    "root"
+  ],
+  "title": "BehaviorConfig",
+  "type": "object"
+}

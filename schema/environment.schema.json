@@ -1,0 +1,755 @@
+{
+  "$id": "https://mecha10.dev/schemas/environment-config.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "cubeObject": {
+      "description": "A 3D cube placed in the scene. Maps to a MuJoCo box geom (collision geom if `add_collision: true`).",
+      "properties": {
+        "add_collision": {
+          "default": false,
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "color": {
+          "description": "RGBA color, each component 0.0-1.0.",
+          "examples": [
+            [
+              0.8,
+              0.2,
+              0.2,
+              1.0
+            ]
+          ],
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "material_type": {
+          "enum": [
+            "standard",
+            "metallic",
+            "emission",
+            "unshaded"
+          ],
+          "examples": [
+            "standard"
+          ],
+          "type": "string"
+        },
+        "metallic": {
+          "examples": [
+            0.0
+          ],
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        "position": {
+          "$ref": "#/definitions/vec3",
+          "description": "World position `[x, y, z]` in meters.",
+          "examples": [
+            [
+              3.0,
+              0.5,
+              3.0
+            ]
+          ]
+        },
+        "roughness": {
+          "examples": [
+            0.8
+          ],
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        "size": {
+          "$ref": "#/definitions/vec3",
+          "description": "Box half/full extents `[x, y, z]` in meters. Default `[1, 1, 1]`.",
+          "examples": [
+            [
+              1.0,
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "type": {
+          "const": "cube"
+        }
+      },
+      "required": [
+        "type",
+        "position"
+      ],
+      "type": "object"
+    },
+    "floorFeature": {
+      "description": "Flat-plane floor geometry/material.",
+      "examples": [
+        {
+          "collision": true,
+          "friction": 0.8,
+          "material": "concrete",
+          "type": "flat"
+        }
+      ],
+      "properties": {
+        "collision": {
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "friction": {
+          "examples": [
+            0.8
+          ],
+          "minimum": 0.0,
+          "type": "number"
+        },
+        "material": {
+          "examples": [
+            "concrete"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "examples": [
+            "flat"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "material",
+        "friction",
+        "collision"
+      ],
+      "type": "object"
+    },
+    "goalsFeature": {
+      "examples": [
+        {
+          "count": 0,
+          "type": "none"
+        }
+      ],
+      "properties": {
+        "count": {
+          "examples": [
+            0
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "type": {
+          "examples": [
+            "none"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "count",
+        "type"
+      ],
+      "type": "object"
+    },
+    "imageObject": {
+      "description": "An image rendered as a flat plane in the scene.",
+      "properties": {
+        "interactive": {
+          "default": false,
+          "description": "Whether the object responds to click/interaction.",
+          "examples": [
+            false
+          ],
+          "type": "boolean"
+        },
+        "motion": {
+          "description": "Optional back-and-forth patrol motion along one world axis, applied to this image object over the course of an episode. Declares the contract only -- the actual per-step position update is driven by the mecha10-rl side, not this repo.",
+          "examples": [
+            {
+              "axis": "x",
+              "range_max": 8.0,
+              "range_min": -8.0,
+              "speed": 1.0,
+              "type": "patrol"
+            }
+          ],
+          "properties": {
+            "axis": {
+              "description": "World axis the object patrols along.",
+              "enum": [
+                "x",
+                "y"
+              ]
+            },
+            "range_max": {
+              "description": "Maximum coordinate (meters) along `axis` the object patrols to.",
+              "type": "number"
+            },
+            "range_min": {
+              "description": "Minimum coordinate (meters) along `axis` the object patrols to.",
+              "type": "number"
+            },
+            "speed": {
+              "description": "Patrol speed in meters/second. Default `1.0`.",
+              "examples": [
+                1.0
+              ],
+              "type": "number"
+            },
+            "type": {
+              "enum": [
+                "patrol"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "axis",
+            "range_min",
+            "range_max"
+          ],
+          "type": "object"
+        },
+        "position": {
+          "$ref": "#/definitions/vec3",
+          "description": "World position `[x, y, z]` in meters.",
+          "examples": [
+            [
+              -3.0,
+              0.5,
+              0.0
+            ]
+          ]
+        },
+        "rotation": {
+          "$ref": "#/definitions/vec3",
+          "description": "Rotation in degrees `[x, y, z]`, applied to the plane geom. Default `[0, 0, 0]`.",
+          "examples": [
+            [
+              0,
+              90,
+              0
+            ]
+          ]
+        },
+        "scale": {
+          "$ref": "#/definitions/vec3",
+          "description": "Per-axis scale `[x, y, z]`. Default `[1, 1, 1]`.",
+          "examples": [
+            [
+              1.0,
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "source": {
+          "description": "Path to the image asset, relative to the project root.",
+          "examples": [
+            "configs/simulation/images/aiko.jpg"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "const": "image"
+        },
+        "visible": {
+          "default": true,
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "source",
+        "position"
+      ],
+      "type": "object"
+    },
+    "lightingFeature": {
+      "examples": [
+        {
+          "ambient": {
+            "color": [
+              0.8,
+              0.8,
+              0.8,
+              1.0
+            ],
+            "enabled": true,
+            "source": "background"
+          },
+          "directional": {
+            "angle": "45_degrees",
+            "enabled": true,
+            "energy": 1.2,
+            "shadows": true
+          }
+        }
+      ],
+      "properties": {
+        "ambient": {
+          "properties": {
+            "color": {
+              "$ref": "#/definitions/vec4",
+              "description": "RGBA color, each component 0.0-1.0."
+            },
+            "enabled": {
+              "examples": [
+                true
+              ],
+              "type": "boolean"
+            },
+            "source": {
+              "examples": [
+                "background"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "enabled",
+            "color",
+            "source"
+          ],
+          "type": "object"
+        },
+        "directional": {
+          "properties": {
+            "angle": {
+              "examples": [
+                "45_degrees"
+              ],
+              "type": "string"
+            },
+            "enabled": {
+              "examples": [
+                true
+              ],
+              "type": "boolean"
+            },
+            "energy": {
+              "examples": [
+                1.2
+              ],
+              "type": "number"
+            },
+            "shadows": {
+              "examples": [
+                true
+              ],
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "enabled",
+            "energy",
+            "shadows",
+            "angle"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "directional",
+        "ambient"
+      ],
+      "type": "object"
+    },
+    "npcsFeature": {
+      "examples": [
+        {
+          "count": 0,
+          "enabled": false
+        }
+      ],
+      "properties": {
+        "count": {
+          "examples": [
+            0
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "enabled": {
+          "examples": [
+            false
+          ],
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "count"
+      ],
+      "type": "object"
+    },
+    "obstaclesFeature": {
+      "examples": [
+        {
+          "count": 5,
+          "type": "mixed"
+        }
+      ],
+      "properties": {
+        "count": {
+          "examples": [
+            5
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "type": {
+          "examples": [
+            "mixed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "count",
+        "type"
+      ],
+      "type": "object"
+    },
+    "renderQuality": {
+      "description": "Render quality settings that trade visual fidelity for performance.",
+      "properties": {
+        "antialiasing": {
+          "default": "off",
+          "description": "Anti-aliasing quality tier.",
+          "enum": [
+            "off",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "mesh_detail": {
+          "default": "very_low",
+          "description": "Tessellation of non-mesh primitive geoms (sphere/cylinder/capsule). No effect on box/plane geoms.",
+          "enum": [
+            "very_low",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "shadows": {
+          "default": "off",
+          "description": "Shadow map resolution tier.",
+          "enum": [
+            "off",
+            "very_low",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "spawnPointsFeature": {
+      "examples": [
+        {
+          "count": 5,
+          "default_index": 0,
+          "positions": [
+            [
+              0,
+              5.0,
+              0
+            ],
+            [
+              -5,
+              5.0,
+              -5
+            ]
+          ]
+        }
+      ],
+      "properties": {
+        "count": {
+          "examples": [
+            5
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "default_index": {
+          "examples": [
+            0
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "positions": {
+          "examples": [
+            [
+              [
+                0,
+                5.0,
+                0
+              ],
+              [
+                -5,
+                5.0,
+                -5
+              ]
+            ]
+          ],
+          "items": {
+            "$ref": "#/definitions/vec3"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "count",
+        "positions",
+        "default_index"
+      ],
+      "type": "object"
+    },
+    "vec3": {
+      "examples": [
+        [
+          3.0,
+          0.5,
+          3.0
+        ]
+      ],
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "vec4": {
+      "examples": [
+        [
+          0.8,
+          0.8,
+          0.8,
+          1.0
+        ]
+      ],
+      "items": {
+        "type": "number"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "wallsFeature": {
+      "description": "Perimeter wall geometry/material.",
+      "examples": [
+        {
+          "collision": true,
+          "count": 4,
+          "height": 3.0,
+          "material": "concrete",
+          "thickness": 0.5
+        }
+      ],
+      "properties": {
+        "collision": {
+          "examples": [
+            true
+          ],
+          "type": "boolean"
+        },
+        "count": {
+          "examples": [
+            4
+          ],
+          "minimum": 0,
+          "type": "integer"
+        },
+        "height": {
+          "examples": [
+            3.0
+          ],
+          "type": "number"
+        },
+        "material": {
+          "examples": [
+            "concrete"
+          ],
+          "type": "string"
+        },
+        "thickness": {
+          "examples": [
+            0.5
+          ],
+          "type": "number"
+        }
+      },
+      "required": [
+        "count",
+        "height",
+        "thickness",
+        "material",
+        "collision"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Schema for a simulation environment configuration file.",
+  "properties": {
+    "$schema": {
+      "examples": [
+        "../../schemas/environment-config.schema.json"
+      ],
+      "type": "string"
+    },
+    "description": {
+      "description": "Brief description of the environment's purpose.",
+      "examples": [
+        "Versatile starter arena with flat plane, walls, lighting, and multiple spawn points"
+      ],
+      "type": "string"
+    },
+    "dimensions": {
+      "properties": {
+        "height": {
+          "examples": [
+            3.0
+          ],
+          "type": "number"
+        },
+        "length": {
+          "examples": [
+            20.0
+          ],
+          "type": "number"
+        },
+        "unit": {
+          "const": "meters",
+          "examples": [
+            "meters"
+          ],
+          "type": "string"
+        },
+        "width": {
+          "examples": [
+            20.0
+          ],
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "length",
+        "height",
+        "unit"
+      ],
+      "type": "object"
+    },
+    "features": {
+      "properties": {
+        "floor": {
+          "$ref": "#/definitions/floorFeature"
+        },
+        "goals": {
+          "$ref": "#/definitions/goalsFeature"
+        },
+        "lighting": {
+          "$ref": "#/definitions/lightingFeature"
+        },
+        "npcs": {
+          "$ref": "#/definitions/npcsFeature"
+        },
+        "objects": {
+          "description": "Custom objects placed in the scene. Each entry is discriminated by `type`.",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/cubeObject"
+              },
+              {
+                "$ref": "#/definitions/imageObject"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "obstacles": {
+          "$ref": "#/definitions/obstaclesFeature"
+        },
+        "spawn_points": {
+          "$ref": "#/definitions/spawnPointsFeature"
+        },
+        "walls": {
+          "$ref": "#/definitions/wallsFeature"
+        }
+      },
+      "type": "object"
+    },
+    "id": {
+      "description": "Unique identifier for the environment (snake_case, no spaces).",
+      "examples": [
+        "basic_arena"
+      ],
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "type": "string"
+    },
+    "name": {
+      "description": "Human-readable name.",
+      "examples": [
+        "Basic Arena"
+      ],
+      "type": "string"
+    },
+    "render_quality": {
+      "$ref": "#/definitions/renderQuality"
+    },
+    "rewards": {
+      "description": "Optional RL reward-shaping configuration.",
+      "type": "object"
+    },
+    "scene_path": {
+      "description": "Legacy scene resource path, kept for backward compatibility.",
+      "examples": [
+        "res://packages/mecha10-templates/templates/configs/simulation/environments/basic_arena/basic_arena.tscn"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "description": "Semantic version of the environment.",
+      "examples": [
+        "1.0.0"
+      ],
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "name",
+    "description",
+    "scene_path",
+    "dimensions",
+    "features"
+  ],
+  "title": "Mecha10 Simulation Environment Config",
+  "type": "object"
+}
