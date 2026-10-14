@@ -8,6 +8,8 @@ cargo run -p mecha10-cli --example export_schemas
 
 Descriptions come from the schemas themselves (Rust doc comments on node config structs, via `schemars`, or `get_project_schema()`'s own `description` fields for the project config). See [`docs/validate-configs.md`](../validate-configs.md) for how these schemas are used to validate configs, and the raw `.schema.json` files alongside this doc for the exact JSON Schema.
 
+This directory is also mirrored verbatim to the public [`mecha-industries/mecha10-schema`](https://github.com/mecha-industries/mecha10-schema) repo (LAB-4067), kept in sync by CI (`scripts/ci/schema-mirror-publish.sh`) — that's the fetchable location for consumers (e.g. the public dashboard docs page, LAB-4054) that can't read this private repo directly.
+
 ## Contents
 
 - [Project config (mecha10.json)](#project-config-mecha10json)
